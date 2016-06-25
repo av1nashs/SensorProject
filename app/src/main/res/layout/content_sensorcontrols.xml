@@ -129,4 +129,40 @@
         android:layout_below="@+id/connect"
         android:layout_alignParentStart="true" />
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text="Latitude:"
+        android:id="@+id/latitude"
+        android:layout_below="@+id/txtview"
+        android:layout_alignParentStart="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text="Longitude:   "
+        android:id="@+id/longitude"
+        android:layout_below="@+id/latitude"
+        android:layout_alignParentStart="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text=""
+        android:id="@+id/lat"
+        android:layout_below="@+id/txtview"
+        android:layout_toEndOf="@+id/longitude" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text=""
+        android:id="@+id/longv"
+        android:layout_below="@+id/lat"
+        android:layout_toRightOf="@+id/longitude" />
+
 </RelativeLayout>

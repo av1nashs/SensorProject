@@ -46,7 +46,6 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
-import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -58,6 +57,33 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+
+
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import android.support.design.widget.FloatingActionButton;
+import android.widget.Button;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+
+import java.text.DateFormat;
+import java.util.Date;
 
 
 
@@ -115,7 +141,7 @@ public class Sensorcontrols extends AppCompatActivity {
 }*/
 
 
-public class Sensorcontrols extends AppCompatActivity {
+public class Sensorcontrols extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, com.google.android.gms.location.LocationListener {
     private final static String TAG = Sensorcontrols.class.getSimpleName();
 
     private Button connectBtn = null;
@@ -142,10 +168,13 @@ public class Sensorcontrols extends AppCompatActivity {
 
     //GPS Part
     //private Button b;
+    private GoogleApiClient mGoogleApiClient;
+    private LocationRequest mLocationRequest;
+    private String mLastUpdateTime;
+    private TextView mLatitudeTextView;
+    private TextView mLongitudeTextView;
     private FloatingActionButton b;
-    private TextView t;
-    private LocationManager locationManager;
-    private LocationListener listener;
+    ////////
 
     final private static char[] hexArray = { '0', '1', '2', '3', '4', '5', '6',
             '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
@@ -195,7 +224,7 @@ public class Sensorcontrols extends AppCompatActivity {
     };
 
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         //super.onCreate(savedInstanceState);
 
         //-requestWindowFeature(Window.FEATURE_CUSTOM_TITLE);
@@ -209,38 +238,26 @@ public class Sensorcontrols extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         //GPS Part
-        t = (TextView) findViewById(R.id.txtview);
+        //t = (TextView) findViewById(R.id.txtview);
         //b = (Button) findViewById(R.id.button);
+        //b = (FloatingActionButton) findViewById(R.id.fab);
+
+
+
+
+        mLatitudeTextView = (TextView) findViewById((R.id.lat));
+        mLongitudeTextView = (TextView) findViewById((R.id.longv));
         b = (FloatingActionButton) findViewById(R.id.fab);
 
-        locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API)
+                .build();
 
 
-        listener = new LocationListener() {
-            @Override
-            public void onLocationChanged(Location location) {
-                t.append("\n " + location.getLongitude() + " " + location.getLatitude());
-            }
 
-            @Override
-            public void onStatusChanged(String s, int i, Bundle bundle) {
-
-            }
-
-            @Override
-            public void onProviderEnabled(String s) {
-
-            }
-
-            @Override
-            public void onProviderDisabled(String s) {
-
-                Intent i = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-                startActivity(i);
-            }
-        };
-
-        configure_button();
 
 
 
@@ -418,29 +435,29 @@ public class Sensorcontrols extends AppCompatActivity {
                     digitalInBtn.setChecked(true);
             } else if */
             if (data[i] == 0x0B) {
-                int Value;
+                int coValue;
 
-                Value = ((data[i + 1] << 8) & 0x0000ff00)
+                coValue = ((data[i + 1] << 8) & 0x0000ff00)
                         | (data[i + 2] & 0x000000ff);
 
-                COValue.setText(Value + "ppm");
+                COValue.setText(coValue + "ppm");
             }
             else if (data[i] == 0x0C) {
-                int Value;
+                int no2Value;
 
-                Value = ((data[i + 1] << 8) & 0x0000ff00)
+                no2Value = ((data[i + 1] << 8) & 0x0000ff00)
                         | (data[i + 2] & 0x000000ff);
 
-                NO2Value.setText(Value + "ppm");
+                NO2Value.setText(no2Value + "ppm");
             }
 
             else if (data[i] == 0x0D) {
-                int Value;
+                int nh3Value;
 
-                Value = ((data[i + 1] << 8) & 0x0000ff00)
+                nh3Value = ((data[i + 1] << 8) & 0x0000ff00)
                         | (data[i + 2] & 0x000000ff);
 
-                NH3Value.setText(Value + "ppm");
+                NH3Value.setText(nh3Value + "ppm");
             }
         }
     }
@@ -585,34 +602,57 @@ public class Sensorcontrols extends AppCompatActivity {
 
     //GPS Part
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        switch (requestCode){
-            case 10:
-                configure_button();
-                break;
-            default:
-                break;
-        }
-    }
-
-    void configure_button(){
-        // first check for permissions
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION,Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.INTERNET}
-                        ,10);
-            }
-            return;
-        }
-        // this code won't execute IF permissions are not allowed, because in the line above there is return statement.
+    protected void onStart() {
+        super.onStart();
         b.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //noinspection MissingPermission
-                locationManager.requestLocationUpdates("gps", 1000, 0, listener);
-                //locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 5000, 0, Llistener);﻿
+                mGoogleApiClient.connect();
             }
         });
+    }
+
+
+
+    @Override
+    public void onConnected(Bundle bundle) {
+        mLocationRequest = LocationRequest.create();
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        mLocationRequest.setInterval(5000);
+        mLocationRequest.setFastestInterval(3000);
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
+
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+        Log.i(TAG, "Connection Suspended");
+        mGoogleApiClient.connect();
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        mLastUpdateTime = DateFormat.getTimeInstance().format(new Date());
+        mLatitudeTextView.setText(String.valueOf(location.getLatitude()));
+        mLongitudeTextView.setText(String.valueOf(location.getLongitude()));
+        Toast.makeText(this, "Updated: " + mLastUpdateTime, Toast.LENGTH_SHORT).show();
+
+    }
+
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+        Log.i(TAG, "Connection failed. Error: " + connectionResult.getErrorCode());
+
     }
     //////////////////////////////////////////////////
     @Override
@@ -622,6 +662,10 @@ public class Sensorcontrols extends AppCompatActivity {
         flag = false;
 
         unregisterReceiver(mGattUpdateReceiver);
+        if (mGoogleApiClient.isConnected()) {
+            mGoogleApiClient.disconnect();
+        }
+
     }
 
     @Override
