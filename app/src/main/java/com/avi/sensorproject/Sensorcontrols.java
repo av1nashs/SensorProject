@@ -23,13 +23,9 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.View.OnClickListener;
-//import android.view.Window;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
-//import android.widget.SeekBar;
-//import android.widget.SeekBar.OnSeekBarChangeListener;
-//import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
@@ -38,25 +34,15 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.os.Handler;
 
-import android.Manifest;
-import android.content.Intent;
-import android.content.pm.PackageManager;
+
 import android.location.Location;
-import android.location.LocationManager;
-import android.os.Build;
-import android.os.Bundle;
-import android.provider.Settings;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.view.View;
-import android.widget.Button;
-import android.widget.TextView;
+
 
 
 import android.content.pm.PackageManager;
@@ -71,10 +57,6 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import android.support.design.widget.FloatingActionButton;
-import android.widget.Button;
-import android.widget.CompoundButton;
-import android.widget.CompoundButton.OnCheckedChangeListener;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -86,18 +68,14 @@ import java.text.DateFormat;
 import java.util.Date;
 
 
+//Google Sheets Update
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+/////
 
-/*package com.avi.sensorproject;
-
-import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-import android.view.View;
-import android.view.Menu;
-import android.view.MenuItem;
-
+/*
 public class Sensorcontrols extends AppCompatActivity {
 
     @Override
@@ -161,6 +139,7 @@ public class Sensorcontrols extends AppCompatActivity implements GoogleApiClient
     private boolean flag = true;
     private boolean connState = false;
     private boolean scanFlag = false;
+    private boolean upload ;
 
     private byte[] data = new byte[3];
     private static final int REQUEST_ENABLE_BT = 1;
@@ -178,6 +157,29 @@ public class Sensorcontrols extends AppCompatActivity implements GoogleApiClient
 
     final private static char[] hexArray = { '0', '1', '2', '3', '4', '5', '6',
             '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_sensorcontrols, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_settings) {
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
 
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
 
@@ -225,25 +227,10 @@ public class Sensorcontrols extends AppCompatActivity implements GoogleApiClient
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        //super.onCreate(savedInstanceState);
-
-        //-requestWindowFeature(Window.FEATURE_CUSTOM_TITLE);
-        //this.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        //setContentView(R.layout.activity_sensorcontrols);
-        //getWindow().setFeatureInt(Window.FEATURE_CUSTOM_TITLE, R.layout.title);
-        //protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sensorcontrols);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        //GPS Part
-        //t = (TextView) findViewById(R.id.txtview);
-        //b = (Button) findViewById(R.id.button);
-        //b = (FloatingActionButton) findViewById(R.id.fab);
-
-
-
 
         mLatitudeTextView = (TextView) findViewById((R.id.lat));
         mLongitudeTextView = (TextView) findViewById((R.id.longv));
@@ -258,19 +245,7 @@ public class Sensorcontrols extends AppCompatActivity implements GoogleApiClient
 
 
 
-
-
-
-
-       /* FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        }); */
-
+        //spreadsheet
 
 
         rssiValue = (TextView) findViewById(R.id.rssiValue);
@@ -280,8 +255,6 @@ public class Sensorcontrols extends AppCompatActivity implements GoogleApiClient
         NO2Value = (TextView) findViewById(R.id.NO2Text);
 
         NH3Value = (TextView) findViewById(R.id.NH3Text);
-
-        // digitalInBtn = (ToggleButton) findViewById(R.id.DIntBtn);
 
         connectBtn = (Button) findViewById(R.id.connect);
         connectBtn.setOnClickListener(new OnClickListener() {
@@ -417,6 +390,8 @@ public class Sensorcontrols extends AppCompatActivity implements GoogleApiClient
         }
 
         registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
+
+        upload = true;
     }
 
     private void displayData(String data) {
@@ -461,6 +436,18 @@ public class Sensorcontrols extends AppCompatActivity implements GoogleApiClient
             }
         }
     }
+
+    private final Callback<Void> callCallback = new Callback<Void>() {
+        @Override
+        public void onResponse(Response<Void> response) {
+            Log.d("XXX", "Submitted. " + response);
+        }
+
+        @Override
+        public void onFailure(Throwable t) {
+            Log.e("XXX", "Failed", t);
+        }
+    };
 
     private void setButtonEnable() {
         flag = true;
@@ -600,14 +587,45 @@ public class Sensorcontrols extends AppCompatActivity implements GoogleApiClient
         return newString.toString();
     }
 
+    private Handler myHandler;
+    //spreadsheet
+    Retrofit retrofit = new Retrofit.Builder()
+            .baseUrl("https://docs.google.com/forms/d/")
+            .build();
+    final SensorSpreadsheetWebService spreadsheetWebService = retrofit.create(SensorSpreadsheetWebService.class);
+    int delay = 1000;
+    private Runnable myRunnable = new Runnable() {
+        @Override
+        public void run(){
+            String LatitudeInput = mLatitudeTextView.getText().toString();
+            String LongitudeInput = mLongitudeTextView.getText().toString();
+            String COInput = COValue.getText().toString();
+            String NO2Input = NO2Value.getText().toString();
+            String NH3Input = NH3Value.getText().toString();
+            Call<Void> completeQuestionnaireCall = spreadsheetWebService.completeQuestionnaire(LatitudeInput, LongitudeInput, COInput, NO2Input, NH3Input);
+            completeQuestionnaireCall.enqueue(callCallback);
+            //do something
+            myHandler.postDelayed(this, delay);
+        }
+    };
+
     //GPS Part
     @Override
     protected void onStart() {
         super.onStart();
+        upload = true ;
+        myHandler = new Handler();
+
+        ///
+
+
+        //final int delay = 1000; //milliseconds
         b.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 mGoogleApiClient.connect();
+
+                myHandler.post(myRunnable);
             }
         });
     }
@@ -645,8 +663,10 @@ public class Sensorcontrols extends AppCompatActivity implements GoogleApiClient
         mLastUpdateTime = DateFormat.getTimeInstance().format(new Date());
         mLatitudeTextView.setText(String.valueOf(location.getLatitude()));
         mLongitudeTextView.setText(String.valueOf(location.getLongitude()));
-        Toast.makeText(this, "Updated: " + mLastUpdateTime, Toast.LENGTH_SHORT).show();
 
+
+
+        Toast.makeText(this, "Updated: " + mLastUpdateTime, Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -658,14 +678,21 @@ public class Sensorcontrols extends AppCompatActivity implements GoogleApiClient
     @Override
     protected void onStop() {
         super.onStop();
-
+        //upload = false;
         flag = false;
+        myHandler.removeCallbacks(myRunnable);
 
         unregisterReceiver(mGattUpdateReceiver);
         if (mGoogleApiClient.isConnected()) {
             mGoogleApiClient.disconnect();
         }
 
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        //upload = false;
     }
 
     @Override
