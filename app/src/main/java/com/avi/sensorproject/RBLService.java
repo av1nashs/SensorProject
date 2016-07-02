@@ -73,7 +73,7 @@ public class RBLService extends Service {
             } else {
                 Log.w(TAG, "onReadRemoteRssi received: " + status);
             }
-        };
+        }
 
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
@@ -200,11 +200,7 @@ public class RBLService extends Service {
                 && mBluetoothGatt != null) {
             Log.d(TAG,
                     "Trying to use an existing mBluetoothGatt for connection.");
-            if (mBluetoothGatt.connect()) {
-                return true;
-            } else {
-                return false;
-            }
+            return mBluetoothGatt.connect();
         }
 
         final BluetoothDevice device = mBluetoothAdapter

@@ -19,6 +19,7 @@ import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.support.multidex.MultiDex;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -41,23 +42,6 @@ import android.os.Handler;
 
 import android.location.Location;
 import android.support.v4.app.ActivityCompat;
-import android.support.v7.app.AppCompatActivity;
-
-
-
-import android.content.pm.PackageManager;
-import android.location.Location;
-import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.v4.app.ActivityCompat;
-import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
-import android.view.View;
-import android.widget.Button;
-import android.widget.TextView;
-import android.widget.Toast;
-
-
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
@@ -120,6 +104,11 @@ public class Sensorcontrols extends AppCompatActivity {
 
 
 public class Sensorcontrols extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, com.google.android.gms.location.LocationListener {
+    @Override
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(base);
+        MultiDex.install(this);
+    }
     private final static String TAG = Sensorcontrols.class.getSimpleName();
 
     private Button connectBtn = null;
@@ -487,7 +476,7 @@ public class Sensorcontrols extends AppCompatActivity implements GoogleApiClient
                         e.printStackTrace();
                     }
                 }
-            };
+            }
         }.start();
     }
 
@@ -616,15 +605,12 @@ public class Sensorcontrols extends AppCompatActivity implements GoogleApiClient
         upload = true ;
         myHandler = new Handler();
 
-        ///
-
-
-        //final int delay = 1000; //milliseconds
         b.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 mGoogleApiClient.connect();
-
+                Snackbar.make(view, "Upload Started", Snackbar.LENGTH_LONG)
+                .setAction("Action", null).show();
                 myHandler.post(myRunnable);
             }
         });
@@ -663,7 +649,6 @@ public class Sensorcontrols extends AppCompatActivity implements GoogleApiClient
         mLastUpdateTime = DateFormat.getTimeInstance().format(new Date());
         mLatitudeTextView.setText(String.valueOf(location.getLatitude()));
         mLongitudeTextView.setText(String.valueOf(location.getLongitude()));
-
 
 
         Toast.makeText(this, "Updated: " + mLastUpdateTime, Toast.LENGTH_SHORT).show();

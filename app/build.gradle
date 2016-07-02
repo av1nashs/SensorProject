@@ -10,12 +10,19 @@ android {
         targetSdkVersion 23
         versionCode 1
         versionName "1.0"
+        // Enabling multidex support.
+        multiDexEnabled true
     }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+
+    dexOptions {
+        incremental true
+        javaMaxHeapSize "4g"
     }
 }
 
@@ -24,6 +31,7 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:23.2.1'
     compile 'com.android.support:design:23.2.1'
-    compile 'com.google.android.gms:play-services:9.0.2'
+    compile 'com.google.android.gms:play-services:8.1.0'
     compile 'com.squareup.retrofit2:retrofit:2.0.0-beta3'
+    compile 'com.android.support:multidex:'
 }
