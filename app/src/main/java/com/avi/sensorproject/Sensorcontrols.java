@@ -19,6 +19,7 @@ import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.Vibrator;
 import android.support.multidex.MultiDex;
 import android.util.Log;
 import android.view.Gravity;
@@ -62,49 +63,6 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 /////
 
-/*
-public class Sensorcontrols extends AppCompatActivity {
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_sensorcontrols);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_sensorcontrols, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-}*/
-
 
 public class Sensorcontrols extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, com.google.android.gms.location.LocationListener {
     @Override
@@ -120,6 +78,7 @@ public class Sensorcontrols extends AppCompatActivity implements GoogleApiClient
     private TextView NH3Value = null;
     private TextView NO2Value = null;
     private ToggleButton NO2Btn, NH3Btn, COBtn;
+    private int co, no2, nh3;
     //private SeekBar servoSeekBar, PWMSeekBar;
 
     private BluetoothGattCharacteristic characteristicTx = null;
@@ -150,6 +109,8 @@ public class Sensorcontrols extends AppCompatActivity implements GoogleApiClient
     private FloatingActionButton fab3;
 
     private boolean FAB_Status = false;
+
+    Vibrator mVibrator;
     ////////
     //Animations
     Animation show_fab_1;
@@ -262,6 +223,7 @@ public class Sensorcontrols extends AppCompatActivity implements GoogleApiClient
         show_fab_3 = AnimationUtils.loadAnimation(getApplication(), R.anim.fab3_show);
         hide_fab_3 = AnimationUtils.loadAnimation(getApplication(), R.anim.fab3_hide);
 
+        mVibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
 
 
         //spreadsheet
@@ -429,27 +391,45 @@ public class Sensorcontrols extends AppCompatActivity implements GoogleApiClient
                     digitalInBtn.setChecked(true);
             } else if */
             if (data[i] == 0x0B) {
-                int coValue;
+                float coValue;
+                int analogCOVal;
 
-                coValue = ((data[i + 1] << 8) & 0x0000ff00)
+
+                analogCOVal = ((data[i + 1] << 8) & 0x0000ff00)
                         | (data[i + 2] & 0x000000ff);
+
+                coValue = calculateCOConcentration(analogCOVal);
+
+                //co = coValue;
 
                 COValue.setText(coValue + "ppm");
+                //colorvibrate();
             }
             else if (data[i] == 0x0C) {
-                int no2Value;
+                float no2Value;
+                int analogno2Value;
 
-                no2Value = ((data[i + 1] << 8) & 0x0000ff00)
+
+                analogno2Value = ((data[i + 1] << 8) & 0x0000ff00)
                         | (data[i + 2] & 0x000000ff);
+
+                no2Value = calculateNO2Concentration(analogno2Value);
+
+                //no2 = no2Value;
 
                 NO2Value.setText(no2Value + "ppm");
             }
 
             else if (data[i] == 0x0D) {
-                int nh3Value;
+                float nh3Value;
+                int analognh3Value;
 
-                nh3Value = ((data[i + 1] << 8) & 0x0000ff00)
+                analognh3Value = ((data[i + 1] << 8) & 0x0000ff00)
                         | (data[i + 2] & 0x000000ff);
+
+                nh3Value = calculateNH3Concentration(analognh3Value);
+
+                //nh3 = nh3Value;
 
                 NH3Value.setText(nh3Value + "ppm");
             }
@@ -666,6 +646,9 @@ public class Sensorcontrols extends AppCompatActivity implements GoogleApiClient
                 if (mGoogleApiClient.isConnected()) {
                     mGoogleApiClient.disconnect();
                 }
+
+                mLatitudeTextView.setText("");
+                mLongitudeTextView.setText("");
             }
         });
 
@@ -829,5 +812,84 @@ public class Sensorcontrols extends AppCompatActivity implements GoogleApiClient
         fab3.startAnimation(hide_fab_3);
         fab3.setClickable(false);
     }
+
+
+    private float calculateCOConcentration(int coAnalogValue){
+        float refResForCo = 133;  //After finding this value we use this for measuring Rs/R0
+        float measuredResInAirForCo;
+        float ratioOfResForCO;
+        float finalCOValue;
+
+        measuredResInAirForCo = 56 * coAnalogValue / (1020-coAnalogValue);
+        ratioOfResForCO = measuredResInAirForCo / refResForCo;
+
+        finalCOValue = (float) (Math.pow(ratioOfResForCO, -1.179)*4.385);
+
+
+
+        return finalCOValue; //For finding resistance let's return this later should be changed to finalCOValue
+    }
+
+    private float calculateNO2Concentration(int NO2AnalogValue){
+        float refResForNO2 = 3 ;  //After finding this value we use this for measuring Rs/R0
+        float measuredResInAirForNO2;
+        float ratioOfResForNO2;
+        float finalNO2Value;
+
+        measuredResInAirForNO2 = 56 * NO2AnalogValue / (1020-NO2AnalogValue);
+        ratioOfResForNO2 = measuredResInAirForNO2 / refResForNO2;
+
+        finalNO2Value = (float) (Math.pow(ratioOfResForNO2, 1.007)/6.855);
+
+
+        return finalNO2Value; //For finding resistance let's return this later should be changed to finalNO2Value
+    }
+
+    private float calculateNH3Concentration(int NH3AnalogValue){
+        float refResForNH3 = 37;  //After finding this value we use this for measuring Rs/R0
+        float measuredResInAirForNH3;
+        float ratioOfResForNH3;
+        float finalNH3Value;
+
+        measuredResInAirForNH3 = 56 * NH3AnalogValue / (1020-NH3AnalogValue);
+        ratioOfResForNH3 = measuredResInAirForNH3 / refResForNH3;
+
+        finalNH3Value = (float) (Math.pow(ratioOfResForNH3, -1.67)/1.47);
+
+
+
+        return finalNH3Value; //For finding resistance let's return this later should be changed to finalNH3Value
+    }
+
+
+    private void colorvibrate() {
+        if (co < 9) {
+            //green color
+        } else if (co > 9 && co < 155) {
+            long pattern[] = {0, 100, 100, 100, 100, 100};
+
+            // yellow
+            mVibrator.vibrate(pattern, 0);
+        } else if (co > 155) {
+            long pattern[] = {0, 300, 50, 300, 50, 300};
+
+            // red
+            mVibrator.vibrate(pattern, 2);
+        }
+
+    }
+
+    /* Formula References
+        case NO2:
+        {
+            c = pow(ratio2, 1.007)/6.855;  //mod by jack
+            break;
+        }
+        case NH3:
+        {
+            c = pow(ratio0, -1.67)/1.47;  //modi by jack
+            break;
+
+         */
 
 }
